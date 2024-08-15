@@ -1,0 +1,232 @@
+"use client";
+import { useForm } from "react-hook-form";
+import Input from "@/components/yoly/forms/fields/Input";
+import TextArea from "@/components/yoly/forms/fields/TextArea";
+import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+
+const RegistrationForm = ({ propertyId, owner, ownernumber }) => {
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm();
+  const router = useRouter();
+  const [isLoading, setIsLoading] = useState(false);
+  const [propertyUrl, setPropertyUrl] = useState("");
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setPropertyUrl(`${window.location.origin}/propiedades/${propertyId}`);
+    }
+  }, [propertyId]);
+
+  const onSubmit = async (formData) => {
+    console.log("Form data submitted:", formData);
+
+    try {
+      setIsLoading(true);
+
+      const response = await fetch("/api/registration", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log("Registration successful:", data);
+
+        let whatsappMessage = `Hola ${owner}, mi nombre es ${formData.nombre} y estoy interesado en la casa ${propertyUrl} que vi en CASADEPAW. Es para ${formData.personas} persona(s), ${formData.perros} perro(s) y ${formData.gatos} gato(s). La raza de mi mascota es ${formData.raza}. Me gustaría entrar el ${formData.fechaEntrada}. Mi presupuesto es ${formData.presupuesto}. Me podrías dar más información?`;
+        if (formData.mensaje && formData.mensaje.trim()) {
+          whatsappMessage += ` Como información adicional ${formData.mensaje}.`;
+        }
+
+        const whatsappLink = `https://api.whatsapp.com/send?phone=${ownernumber}&text=${encodeURIComponent(
+          whatsappMessage
+        )}`;
+
+        window.open(whatsappLink, "_blank");
+        router.push(`/propiedades/${propertyId}`);
+      } else {
+        const errorData = await response.json();
+        console.error("Error registering:", errorData);
+      }
+    } catch (error) {
+      console.error("Error submitting form:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div className="max-w-2xl mx-auto p-4 border rounded-lg shadow-md mb-8">
+      <h2 className="text-2xl font-bold mb-4">Formulario</h2>
+      <form
+        onSubmit={handleSubmit(onSubmit)}
+        className="max-w-2xl w-full space-y-4"
+      >
+        <div className="inputfield">
+          <Input
+            label="Nombre"
+            name="nombre"
+            type="text"
+            register={{
+              ...register("nombre", {
+                required: {
+                  value: true,
+                  message: "Nombre es requerido",
+                },
+              }),
+            }}
+            errorMessage={errors.nombre?.message}
+          />
+        </div>
+        <div className="inputfield">
+          <Input
+            label="Teléfono"
+            name="telefono"
+            type="tel"
+            register={{
+              ...register("telefono", {
+                required: {
+                  value: true,
+                  message: "Teléfono es requerido",
+                },
+              }),
+            }}
+            errorMessage={errors.telefono?.message}
+          />
+        </div>
+        <div className="inputfield">
+          <Input
+            label="Fecha de Entrada"
+            name="fechaEntrada"
+            type="date"
+            register={{
+              ...register("fechaEntrada", {
+                required: {
+                  value: true,
+                  message: "Fecha de entrada es requerida",
+                },
+              }),
+            }}
+            errorMessage={errors.fechaEntrada?.message}
+          />
+        </div>
+        <div className="inputfield">
+          <Input
+            label="Presupuesto"
+            name="budget"
+            type="number"
+            register={{
+              ...register("budget", {
+                required: {
+                  value: true,
+                  message: "Presupuesto es requerido",
+                },
+              }),
+            }}
+            errorMessage={errors.budget?.message}
+          />
+        </div>
+        <div className="inputfield">
+          <Input
+            label="Número de Personas"
+            name="personas"
+            type="number"
+            register={{
+              ...register("personas", {
+                required: {
+                  value: true,
+                  message: "Número de personas es requerido",
+                },
+                min: {
+                  value: 1,
+                  message: "Debe alojar al menos 1 persona",
+                },
+              }),
+            }}
+            errorMessage={errors.personas?.message}
+          />
+        </div>
+        <div className="inputfield">
+          <Input
+            label="Número de Perros"
+            name="perros"
+            type="number"
+            register={{
+              ...register("perros", {
+                required: {
+                  value: true,
+                  message: "Número de perros es requerido",
+                },
+                min: {
+                  value: 0,
+                  message: "Debe ser al menos 0",
+                },
+              }),
+            }}
+            errorMessage={errors.perros?.message}
+          />
+        </div>
+        <div className="inputfield">
+          <Input
+            label="Número de Gatos"
+            name="gatos"
+            type="number"
+            register={{
+              ...register("gatos", {
+                required: {
+                  value: true,
+                  message: "Número de gatos es requerido",
+                },
+                min: {
+                  value: 0,
+                  message: "Debe ser al menos 0",
+                },
+              }),
+            }}
+            errorMessage={errors.gatos?.message}
+          />
+        </div>
+        <div className="inputfield">
+          <Input
+            label="Raza"
+            name="raza"
+            type="text"
+            register={{
+              ...register("raza", {
+                required: {
+                  value: true,
+                  message: "Raza es requerida",
+                },
+              }),
+            }}
+            errorMessage={errors.raza?.message}
+          />
+        </div>
+        <div className="inputfield">
+          <TextArea
+            label="Algo más que te gustaría decirnos."
+            name="mensaje"
+            register={register("mensaje")}
+          />
+        </div>
+        <div className="mt-10 flex justify-end border-t border-gray-900/10 pt-8">
+          <button className="btn btn-primary" disabled={isLoading}>
+            {isLoading ? (
+              <span className="loading loading-spinner loading-sm p-2"></span>
+            ) : (
+              "Enviar"
+            )}
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+};
+
+export default RegistrationForm;
